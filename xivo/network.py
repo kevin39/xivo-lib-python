@@ -42,6 +42,7 @@ PROC_NET_VLAN = "/proc/net/vlan"
 VLAN_CONFIG_PARSER = re.compile('^\s*([^\s]+)\s*\|\s*(\d+)\s*\|\s*([^\s]+)\s*$').match
 VLAN_NAME_SPLITTER = re.compile('^(?:vlan(\d+)|(eth\d+)\.(\d+)|(?!vlan)[^\.]*\.(\d+))$').match
 
+PROC = "/proc"
 SYS_CLASS_NET = "/sys/class/net"
 # /sys/class/net/<ifname>/carrier tells us if the interface if plugged
 CARRIER = "carrier"
@@ -154,12 +155,19 @@ def is_linux_netdev_if(ifname):
 
 def is_linux_phy_if(ifname):
     """
-    Return True if ifname seems to be the name of a physical interface
+    Return True if ifname seems to be the name of a physical interface or if
+    current system is curring into a container
     """
     if not is_phy_if(ifname):
         return False
-    return os.path.isdir(os.path.join(SYS_CLASS_NET, ifname, DEVICE))
+    return os.path.isdir(os.path.join(SYS_CLASS_NET, ifname, DEVICE)) or is_openvz()
 
+def is_openvz():
+    """
+    Return True if current system is running under OpenVZ/Virtuozzo container
+    @source https://github.com/chuckleb/virt-what/blob/master/virt-what.in
+    """
+    return os.path.isdir(os.path.join(PROC,'vz')) and not os.path.isdir(os.path.join(PROC,'bc'))
 
 def get_linux_netdev_list():
     """
